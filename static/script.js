@@ -16,8 +16,11 @@ document.getElementById("record").addEventListener("change", function () {
 });
 
 // Write transcription updates to the page
-socket.on("transcription_update", function (data) {
-  document.getElementById("captions").innerHTML = data.transcription;
+socket.on("final_transcription_update", function (data) {
+  document.getElementById("final-captions").innerHTML = data.transcription;
+});
+socket.on("interim_transcription_update", function (data) {
+  document.getElementById("interim-captions").innerHTML = data.transcription;
 });
 
 

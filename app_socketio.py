@@ -44,6 +44,18 @@ def get_dg_connection() -> Optional[LiveClient]:
     return _dg_connection
 
 
+_final_transcription = ""
+
+
+def add_final_transcription(transcript: str):
+    global _final_transcription
+    _final_transcription += transcript + ' '
+
+
+def get_final_transcription() -> str:
+    return _final_transcription
+
+
 def configure_deepgram(dg_connection: LiveClient):
     options = LiveOptions(
         smart_format=True,
@@ -51,6 +63,7 @@ def configure_deepgram(dg_connection: LiveClient):
         encoding="linear16",
         channels=1,
         sample_rate=16000,
+        interim_results=True,
     )
     dg_connection.start(options)
 
@@ -67,7 +80,15 @@ def start_transcription_loop():
             def on_message(self, result, **kwargs):
                 transcript = result.channel.alternatives[0].transcript
                 if len(transcript) > 0:
-                    socketio.emit('transcription_update', {'transcription': transcript})
+                    if result.is_final:
+                        add_final_transcription(transcript)
+                        socketio.emit('final_transcription_update',
+                                      {'transcription': get_final_transcription()})
+                        socketio.emit('interim_transcription_update',
+                                      {'transcription': ''})
+                    else:
+                        socketio.emit('interim_transcription_update',
+                                      {'transcription': transcript})
 
             dg_connection.on(LiveTranscriptionEvents.Transcript, on_message)
 
